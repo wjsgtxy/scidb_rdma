@@ -1,0 +1,611 @@
+/* -*- Java -*-
+**
+* BEGIN_COPYRIGHT
+*
+* Copyright (C) 2008-2019 SciDB, Inc.
+* All Rights Reserved.
+*
+* SciDB is free software: you can redistribute it and/or modify
+* it under the terms of the AFFERO GNU General Public License as published by
+* the Free Software Foundation.
+*
+* SciDB is distributed "AS-IS" AND WITHOUT ANY WARRANTY OF ANY KIND,
+* INCLUDING ANY IMPLIED WARRANTY OF MERCHANTABILITY,
+* NON-INFRINGEMENT, OR FITNESS FOR A PARTICULAR PURPOSE. See
+* the AFFERO GNU General Public License for the complete license terms.
+*
+* You should have received a copy of the AFFERO GNU General Public License
+* along with SciDB.  If not, see <http://www.gnu.org/licenses/agpl-3.0.html>
+*
+* END_COPYRIGHT
+*/
+package org.scidb.io.network;
+
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import com.google.protobuf.GeneratedMessage;
+
+import org.scidb.util.InputStreamWithReadall;
+import org.scidb.client.SciDBException;
+import org.scidb.client.QueryID;
+import org.scidb.client.SessionProperties;
+import org.scidb.io.network.ScidbMsg;
+
+/**
+ * Base class for constructing network messages locally and from socket stream
+ */
+public abstract class Message
+{
+    private GeneratedMessage _record;
+    private Header           _header;
+
+    /* M4 macro madness!!  It would probably be better to make this a
+     * MsgType enum in a separate .java file to avoid messing up the
+     * line numbers in this file.  Maybe later.
+     */
+    define(`X', `    public static final short $1 = $2 ;')
+    include(`util/MessageTypes.inc')
+    undefine(`X')
+
+    /* Authentication tags used by AuthLogon messages. */
+    define(`X', `    public static final String $1_TAG = $3 ;')
+    include(`system/AuthMethods.inc')
+    undefine(`X')
+
+
+    /**
+     * Make message from header
+     *
+     * @param header Message header
+     */
+    public Message(Header header)
+    {
+        _header = header;
+    }
+
+    /**
+     * Make message from stream
+     *
+     * It will read header first and then construct proper message
+     *
+     * @param is Input stream
+     * @return Network message
+     * @throws org.scidb.client.Error
+     * @throws IOException
+     */
+    public static Message parseFromStream(InputStreamWithReadall is)
+        throws SciDBException, IOException
+    {
+        Header hdr = Header.parseFromStream(is);
+
+        switch (hdr.messageType)
+        {
+            case mtAuthError:
+            case mtError:
+                return new Error(hdr, is);
+
+            case mtQueryResult:
+                return new QueryResult(hdr, is);
+
+            case mtChunk:
+                return new Chunk(hdr, is);
+
+            case mtAuthChallenge:
+                return new AuthChallenge(hdr, is);
+
+            case mtAuthComplete:
+                return new AuthComplete(hdr, is);
+
+            default:
+                throw new SciDBException(
+                    "Unknown network message type: " +
+                    hdr.messageType);
+        }
+    }
+
+    /**
+     * Serialize message to stream
+     *
+     * @param os Output stream for writing
+     * @throws IOException
+     */
+    public void writeToStream(OutputStream os) throws IOException
+    {
+        ByteBuffer buf = ByteBuffer.allocate(Header.headerSize);
+        buf.clear();
+        buf.order(ByteOrder.LITTLE_ENDIAN);
+        buf.putShort(getHeader().netProtocolVersion);
+        buf.putShort(getHeader().messageType);
+        buf.putInt(0); // Structure data aligning padding
+        buf.putLong(getRecordSize());
+        buf.putLong(getHeader().binarySize);
+        buf.putLong(getHeader().sourceInstanceID);
+        getHeader().queryID.writeToBuffer(buf);
+        buf.putLong(0); // PhysicalOperatorID.
+        buf.flip();
+        os.write(buf.array());
+        if (_record != null) {
+            _record.writeTo(os);
+        }
+    }
+
+    /**
+     * Returns size of serialized protobuf part
+     *
+     * @return Size of serialized protobuf part
+     */
+    public int getRecordSize()
+    {
+        return (_record != null) ? _record.getSerializedSize() : 0;
+    }
+
+    /**
+     * Set serialized protobuf part
+     *
+     * @param record Protobuf record
+     */
+    private void setRecord(com.google.protobuf.GeneratedMessage record)
+    {
+        _record = record;
+    }
+
+    /**
+     * Get serialized protobuf part
+     *
+     * @return Protobuf record
+     */
+    public com.google.protobuf.GeneratedMessage getRecord()
+    {
+        return _record;
+    }
+
+    /**
+     * Returns message header structure
+     *
+     * @return Header
+     */
+    public Header getHeader()
+    {
+        return _header;
+    }
+
+    /**
+     * Message header which delimit protobuf parts.
+     * Note to developers: the headerSize is 32, even though the total
+     * size of all fields in class Header is 28. The reason is that
+     * the corresponding server-side C++ structure is 8-byte aligned.
+     */
+    public static class Header
+    {
+        public static final int headerSize = 56;
+        public short netProtocolVersion; // uint16_t
+        public short messageType; // uint16_t
+        public long recordSize; // uint64_t v7, uint32_t v6
+        public long binarySize; // uint64_t v7, uint32_t v6
+        public long sourceInstanceID; // uint64_t
+        public QueryID queryID; // sizeof(struct {uint64_t; uint64_t;})
+        public long physicalOperatorID; // physical operatorid
+
+        /**
+         * Default void constructor
+         */
+        public Header()
+        {
+            netProtocolVersion = (short) ScidbMsg.Constants.NET_PROTOCOL_CURRENT_VER.getNumber();
+            messageType = mtNone;
+            sourceInstanceID = ~0;
+            recordSize = 0;
+            binarySize = 0;
+            queryID = null;
+            physicalOperatorID = 0;
+        }
+
+
+        /**
+         * Construct header and fill query id and message type
+         *
+         * @param queryId Query ID
+         * @param messageType Message type
+         */
+        public Header(QueryID queryId, int messageType)
+        {
+            this();
+            assert(queryId != null);
+            this.messageType = (short) messageType;
+            this.queryID = queryId;
+        }
+
+        /**
+         * Make header from stream
+         *
+         * @param is Stream for reading
+         * @return Header
+         * @throws IOException
+         */
+        public static Header parseFromStream(InputStreamWithReadall is)
+            throws IOException
+        {
+            Header res = new Header();
+            byte[] b = new byte[Header.headerSize];
+            int len = is.readAll(b, 0, Header.headerSize);
+            if (len != Header.headerSize) {
+                throw new IOException("Failed to read the full Message::Header, read " + len + " bytes");
+            }
+            ByteBuffer buf = ByteBuffer.wrap(b);
+
+            buf.order(ByteOrder.LITTLE_ENDIAN);
+            res.netProtocolVersion = buf.getShort();
+            res.messageType = buf.getShort();
+            buf.getInt(); // Structure data aligning padding
+            res.recordSize = buf.getLong();
+            res.binarySize = buf.getLong();
+            res.sourceInstanceID = buf.getLong();
+            res.queryID = QueryID.parseFromBuffer(buf);
+            return res;
+        }
+
+        public int iRecordSize() throws IOException
+        {
+            if (this.recordSize > Integer.MAX_VALUE) {
+                throw new IOException("Header recordSize longer than int");
+            }
+            Long LongRecordSize = this.recordSize;
+            return LongRecordSize.intValue();
+        }
+
+        public int iBinarySize() throws IOException
+        {
+            if (this.binarySize > Integer.MAX_VALUE) {
+                throw new IOException("Header binarySize longer than int");
+            }
+            Long LongBinarySize = this.binarySize;
+            return LongBinarySize.intValue();
+        }
+    }
+
+    /**
+     * Query preparing and executing message
+     *
+     * Only for sending
+     */
+    public static class Query extends Message
+    {
+        /**
+         * Constructor
+         *
+         * @param queryId Query ID
+         * @param queryString Query string
+         * @param afl true=AFL, false=AQL
+         * @param programOptions Program options
+         * @param execute true=execute, false=prepare
+         */
+        public Query(
+            QueryID queryId,
+            String queryString,
+            Boolean afl,
+            String programOptions,
+            Boolean execute)
+        {
+            super(new Message.Header(queryId==null ? new QueryID() : queryId,
+                                     execute ? mtExecuteQuery : mtPrepareQuery));
+
+            ScidbMsg.Query.Builder recBuilder =
+                ScidbMsg.Query.newBuilder();
+
+            recBuilder.setQuery(queryString);
+            recBuilder.setAfl(afl);
+            recBuilder.setProgramOptions(programOptions);
+            super.setRecord(recBuilder.build());
+        }
+    }
+
+    /**
+     * Error message
+     *
+     * Only for receiving
+     */
+    public static class Error extends Message
+    {
+        /**
+         * Constructor
+         *
+         * @param hdr Header
+         * @param is Input stream
+         * @throws IOException
+         */
+        public Error(Header hdr, InputStreamWithReadall is)
+            throws IOException
+        {
+            super(hdr);
+            assert(hdr.messageType == mtError || hdr.messageType == mtAuthError);
+            byte[] buf = new byte[hdr.iRecordSize()];
+            if (is.readAll(buf, 0, hdr.iRecordSize()) != hdr.recordSize)  {
+                throw new IOException("Failed to read the full Error::Header.");
+            }
+
+            super.setRecord(ScidbMsg.Error.parseFrom(buf));
+        }
+
+        /**
+         * Returns Cast base protobuf record to Error and return
+         *
+         * @return Error protobuf record
+         */
+        @Override
+        public ScidbMsg.Error getRecord()
+        {
+            return (ScidbMsg.Error) super.getRecord();
+        }
+    }
+
+
+    /**
+     * Query result message
+     *
+     * Only for receiving
+     */
+    public static class QueryResult extends Message
+    {
+        /**
+         * Constructor
+         *
+         * @param hdr Header
+         * @param is Input stream
+         * @throws IOException
+         */
+        public QueryResult(Header hdr, InputStreamWithReadall is)
+            throws IOException
+        {
+            super(hdr);
+            assert (hdr.messageType == mtQueryResult);
+            byte[] buf = new byte[hdr.iRecordSize()];
+            if (is.readAll(buf, 0, hdr.iRecordSize()) != hdr.recordSize)  {
+                throw new IOException("Failed to read the full QueryResult::Header");
+            }
+
+            super.setRecord(ScidbMsg.QueryResult.parseFrom(buf));
+        }
+
+        /**
+         * Returns Cast base protobuf record to QueryResult and return
+         *
+         * @return QueryResult protobuf record
+         */
+        @Override
+        public ScidbMsg.QueryResult getRecord()
+        {
+            return (ScidbMsg.QueryResult) super.getRecord();
+        }
+    }
+
+    /**
+     * AuthComplete message
+     *
+     * Only for receiving
+     */
+    public static class AuthComplete extends Message
+    {
+        /**
+         * Constructor
+         *
+         * @param hdr Header
+         * @param is Input stream
+         * @throws IOException
+         */
+        public AuthComplete(Header hdr, InputStreamWithReadall is)
+            throws IOException
+        {
+            super(hdr);
+            assert (hdr.messageType == mtAuthComplete);
+            byte[] buf = new byte[hdr.iRecordSize()];
+            if (is.readAll(buf, 0, hdr.iRecordSize()) != hdr.recordSize)  {
+                throw new IOException("Failed to read the full AuthComplete::Header.");
+            }
+            super.setRecord(ScidbMsg.AuthComplete.parseFrom(buf));
+        }
+
+        /**
+         * Returns Cast base protobuf record to AuthComplete and return
+         *
+         * @return Error protobuf record
+         */
+        @Override
+        public ScidbMsg.AuthComplete getRecord()
+        {
+            return (ScidbMsg.AuthComplete) super.getRecord();
+        }
+    }
+
+
+    /**
+     * AuthChallenge message
+     *
+     * Only for receiving
+     */
+    public static class AuthChallenge extends Message
+    {
+        /**
+         * Constructor
+         *
+         * @param hdr Header
+         * @param is Input stream
+         * @throws IOException
+         */
+        public AuthChallenge(Header hdr, InputStreamWithReadall is)
+            throws IOException
+        {
+            super(hdr);
+            assert (hdr.messageType == mtAuthChallenge);
+            byte[] buf = new byte[hdr.iRecordSize()];
+            if (is.readAll(buf, 0, hdr.iRecordSize()) != hdr.recordSize)  {
+                throw new IOException(
+                    "Failed to read the full AuthChallenge::Header");
+            }
+
+            super.setRecord(ScidbMsg.AuthChallenge.parseFrom(buf));
+        }
+
+        /**
+         * Returns Cast base protobuf record to AuthChallenge and return
+         *
+         * @return Error protobuf record
+         */
+        @Override
+        public ScidbMsg.AuthChallenge getRecord()
+        {
+            return (ScidbMsg.AuthChallenge) super.getRecord();
+        }
+    }
+
+    /**
+     * Fetch chunk message
+     *
+     * Only for sending
+     */
+    public static class Fetch extends Message
+    {
+        /**
+         * Constructor
+         *
+         * @param queryId Query ID
+         * @param attributeId Attribute to fetch
+         * @param arrayName Array name to fetch
+         */
+        public Fetch(QueryID queryId, int attributeId, String arrayName)
+        {
+            super(new Message.Header(queryId, mtFetch));
+            ScidbMsg.Fetch.Builder recBuilder = ScidbMsg.Fetch.newBuilder();
+            recBuilder.setAttributeId(attributeId);
+            recBuilder.setArrayName(arrayName);
+            super.setRecord(recBuilder.build());
+        }
+    }
+
+    /**
+     * Chunk message
+     *
+     * Only for receiving
+     */
+    public static class Chunk extends Message
+    {
+        private byte[] chunkData = null;
+
+        /**
+         * Constructor
+         *
+         * @param hdr Header
+         * @param is Input stream
+         * @throws IOException
+         */
+        public Chunk(Header hdr, InputStreamWithReadall is) throws IOException
+        {
+            super(hdr);
+            assert (hdr.messageType == mtChunk);
+            byte[] buf = new byte[hdr.iRecordSize()];
+            if (is.readAll(buf, 0, hdr.iRecordSize()) != hdr.recordSize)  {
+                throw new IOException("Failed to read the full Chunk::Header");
+            }
+
+            chunkData = new byte[hdr.iBinarySize()];
+            if (is.readAll(chunkData, 0, hdr.iBinarySize()) != hdr.binarySize) {
+                throw new IOException("Failed to read the full Chunk data");
+            }
+
+            super.setRecord(ScidbMsg.Chunk.parseFrom(buf));
+        }
+
+        /**
+         * Get chunk binary data
+         * @return Array with chunk data
+         */
+        public byte[] getData()
+        {
+            return chunkData;
+        }
+
+        /**
+         * Returns Cast base protobuf record to Chunk and return
+         *
+         * @return Chunk protobuf record
+         */
+        @Override
+        public ScidbMsg.Chunk getRecord()
+        {
+            return (ScidbMsg.Chunk) super.getRecord();
+        }
+    }
+
+    /**
+     * Message for commiting query
+     */
+    public static class CompleteQuery extends Message
+    {
+        public CompleteQuery(QueryID queryId)
+        {
+            super(new Message.Header(queryId, mtCompleteQuery));
+        }
+    }
+
+    /**
+     * Message for rollbacking query
+     */
+    public static class AbortQuery extends Message
+    {
+        public AbortQuery(QueryID queryId)
+        {
+            super(new Message.Header(queryId, mtCancelQuery));
+        }
+    }
+
+
+    /**
+     * Message for AuthLogon
+     */
+    public static class AuthLogon extends Message
+    {
+        public AuthLogon(QueryID queryId, String userName)
+        {
+            this(queryId, userName, new SessionProperties());
+        }
+
+        public AuthLogon(QueryID queryId, String userName, SessionProperties props)
+        {
+            super(new Message.Header(queryId==null ? new QueryID() : queryId,
+                                     mtAuthLogon));
+
+            ScidbMsg.AuthLogon.Builder recBuilder =
+                 ScidbMsg.AuthLogon.newBuilder();
+
+            recBuilder.setUsername(userName);
+            recBuilder.setPriority(props.getPriority());
+            if (userName == null || userName.length() == 0) {
+                recBuilder.setAuthtag(AUTH_TRUST_TAG);
+            } else {
+                recBuilder.setAuthtag(AUTH_RAW_TAG);
+            }
+
+            super.setRecord(recBuilder.build());
+        }
+    }
+
+    /**
+     * Message for AuthResponse
+     */
+    public static class AuthResponse extends Message
+    {
+        public AuthResponse(QueryID queryId, int cookie, String response)
+        {
+            super(new Message.Header(queryId==null ? new QueryID() : queryId,
+                                     mtAuthResponse));
+
+            ScidbMsg.AuthResponse.Builder recBuilder =
+                ScidbMsg.AuthResponse.newBuilder();
+
+            recBuilder.setCookie(cookie);
+            recBuilder.setText(response);
+            super.setRecord(recBuilder.build());
+        }
+    }
+}

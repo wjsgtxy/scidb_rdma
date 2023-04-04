@@ -1,0 +1,309 @@
+%define __strip /bin/true
+%define __os_install_post %{nil}
+%bcond_with insource
+%define scidb               PKGNAME-VERSION_MAJOR.VERSION_MINOR
+%define scidb_boost         scidb-VERSION_MAJOR.VERSION_MINOR-libboost
+%define scidb_boost_version 1.54.0-0
+%define compiler_override   CC=/opt/rh/devtoolset-3/root/usr/bin/gcc CXX=/opt/rh/devtoolset-3/root/usr/bin/g++ FC=/opt/rh/devtoolset-3/root/usr/bin/gfortran
+%define debug_package %{nil}
+Name: %{scidb}
+Version: VERSION_PATCH
+Release: 1
+URL: http://www.Paradigm4.com
+%if %{without insource}
+Source: scidb.tar.gz
+%endif
+Group: Applications/Databases
+Summary: SciDB - database for extra large data processing
+Vendor: Paradigm4, Inc.
+License: Paradigm4
+#Some packages versions which we build by ourself forced to avoid using versions from CentOS or EPEL
+%if 0%{?el6}
+BuildRequires: python27
+BuildRequires: python27-pip
+%else
+BuildRequires: python-pip
+%endif
+BuildRequires: make
+BuildRequires: devtoolset-3-runtime
+BuildRequires: devtoolset-3-toolchain
+BuildRequires: devtoolset-3-gdb
+BuildRequires: flex
+BuildRequires: flex-devel
+BuildRequires: bison
+BuildRequires: utf8cpp-devel
+BuildRequires: %{scidb_boost}-devel = %{scidb_boost_version}
+BuildRequires: protobuf-devel >= 2.4, protobuf-devel < 3.0
+BuildRequires: log4cxx-devel
+BuildRequires: libpqxx-devel  >= 1:4.0.1
+BuildRequires: postgresql93-devel >= 9.3, postgresql93-devel < 9.4
+BuildRequires: bzip2-devel
+BuildRequires: zlib-devel
+BuildRequires: libedit-devel
+BuildRequires: python-devel
+BuildRequires: doxygen
+BuildRequires: libxslt
+BuildRequires: lapack-devel
+BuildRequires: blas-devel
+BuildRequires: openssh-clients
+BuildRequires: cppunit-devel
+BuildRequires: protobuf-compiler
+BuildRequires: pam-devel
+BuildRequires: libcsv-devel
+BuildRequires: openssl-devel
+BuildRequires: rocksdb-devel > 5, rocksdb-devel < 6
+BuildRequires: mpich2scidb-devel
+BuildRequires: scalapack-scidb-mpich2scidb-devel
+BuildRequires: intel-mkl-2019.1-053
+Requires: %{scidb_boost}-date-time       = %{scidb_boost_version}
+Requires: %{scidb_boost}-filesystem      = %{scidb_boost_version}
+Requires: %{scidb_boost}-serialization   = %{scidb_boost_version}
+Requires: %{scidb_boost}-system          = %{scidb_boost_version}
+Requires: %{scidb_boost}-program-options = %{scidb_boost_version}
+Requires: %{scidb_boost}-thread          = %{scidb_boost_version}
+Requires: %{scidb_boost}-regex           = %{scidb_boost_version}
+Requires: python-paramiko
+Requires: python-crypto
+Requires: python-argparse
+Requires: libpqxx  >= 1:4.0.1
+Requires: postgresql93 >= 9.3, postgresql93 < 9.4
+Requires: openssh-clients
+Requires: lapack
+Requires: blas
+Requires: libcsv
+Requires: openssl
+Requires: rocksdb > 5, rocksdb < 6
+Requires: mpich2scidb
+Requires: scalapack-scidb-mpich2scidb
+Requires: intel-mkl-2019.1-053
+Requires(post): %{_sbindir}/update-alternatives
+Requires(postun): %{_sbindir}/update-alternatives
+
+%description
+SciDB - database for extra large data processing
+ BUILD
+
+%package -n %{scidb}-dbg
+Summary: Description: SciDB - database for extra large data processing (debug symbols)
+Group: Applications/Databases
+Requires: %{scidb} = %{version}-%{release}
+%description -n %{scidb}-dbg
+SciDB - database for extra large data processing (debug symbols)
+ BUILD
+
+%package -n %{scidb}-client
+Summary: SciDB client library
+Group: Applications/Databases
+Provides: libscidbclient.so()(64bit)
+%description -n %{scidb}-client
+SciDB client library
+ BUILD
+
+%package -n %{scidb}-client-dbg
+Summary: SciDB client library (debug symbols)
+Group: Applications/Databases
+Requires: %{scidb}-client = %{version}-%{release}
+%description -n %{scidb}-client-dbg
+SciDB client library (debug symbols)
+ BUILD
+
+%package -n %{scidb}-utils
+Summary: SciDB querying tool and other utilities
+Group: Applications/Databases
+Requires: %{scidb}-client >= %{version}-%{release}
+%description -n %{scidb}-utils
+SciDB querying tool and other utilities
+ BUILD
+
+%package -n %{scidb}-utils-dbg
+Summary: SciDB querying tool and other utilities (debug symbols)
+Group: Applications/Databases
+Requires: %{scidb}-utils = %{version}-%{release}
+%description -n %{scidb}-utils-dbg
+SciDB querying tool and other utilities (debug symbols)
+ BUILD
+
+%package -n %{scidb}-dev-tools
+Summary: SciDB developer and tester utilities
+Group: Applications/Databases
+Requires: %{scidb}-client >= %{version}-%{release}
+Requires: time
+Requires: valgrind
+Requires: lsof
+%description -n %{scidb}-dev-tools
+SciDB developer and tester utilities
+ BUILD
+
+%package -n %{scidb}-dev-tools-dbg
+Summary: SciDB developer and tester utilities (debug symbols)
+Group: Applications/Databases
+Requires: %{scidb}-dev-tools = %{version}-%{release}
+%description -n %{scidb}-dev-tools-dbg
+SciDB developer and tester utilities (debug symbols)
+ BUILD
+
+%package -n %{scidb}-plugins
+Summary: SciDB server and client plugins
+Group: Applications/Databases
+Requires: %{scidb}-client = %{version}-%{release}
+%description -n %{scidb}-plugins
+SciDB server and client plugins
+ BUILD
+
+%package -n %{scidb}-plugins-dbg
+Summary: SciDB developer and tester utilities (debug symbols)
+Group: Applications/Databases
+Requires: %{scidb}-plugins = %{version}-%{release}
+%description -n %{scidb}-plugins-dbg
+SciDB developer and tester utilities (debug symbols)
+ BUILD
+
+%package -n %{scidb}-client-python
+Summary: SciDB client library python connector
+Group: Applications/Databases
+Requires: python
+Requires: %{scidb}-client >= %{version}-%{release}
+%description -n %{scidb}-client-python
+SciDB client library python connector
+ BUILD
+
+%package -n %{scidb}-client-python-dbg
+Summary: SciDB client library python connector (debug symbols)
+Group: Applications/Databases
+Requires: %{scidb}-client-python = %{version}-%{release}
+%description -n %{scidb}-client-python-dbg
+SciDB client library python connector (debug symbols)
+ BUILD
+
+%package -n %{scidb}-dev
+Summary: SciDB headers
+Group: Applications/Databases
+Requires: %{scidb}-client >= %{version}-%{release}
+%description -n %{scidb}-dev
+SciDB headers
+ BUILD
+
+%package -n %{scidb}-dbginfo
+Summary: SciDB metapackage which installs debug symbols and gdb
+Group: Applications/Databases
+Requires: %{scidb}-dbg = %{version}-%{release}
+Requires: %{scidb}-plugins-dbg = %{version}-%{release}
+Requires: gdb
+Requires: devtoolset-3-gdb
+%description -n %{scidb}-dbginfo
+Installs debug symbols and gdb
+ BUILD
+
+%package -n %{scidb}-all
+Summary: SciDB metapackage which installs entire SciDB
+Group: Applications/Databases
+Requires: %{scidb} = %{version}-%{release}
+Requires: %{scidb}-client = %{version}-%{release}
+Requires: %{scidb}-utils = %{version}-%{release}
+Requires: %{scidb}-plugins = %{version}-%{release}
+Requires: %{scidb}-client-python = %{version}-%{release}
+%description -n %{scidb}-all
+Install entire SciDB
+ BUILD
+
+%if %{without insource}
+%prep
+# Install the latest version of cmake and protobuf.
+# Using BuildRequires for cmake installs a version that is too old.
+/usr/bin/python2.7 -Wignore -m pip install --upgrade pip
+/usr/bin/python2.7 -Wignore -m pip install --upgrade cmake
+/usr/bin/python2.7 -Wignore -m pip install --upgrade protobuf
+%setup -c -q
+%endif
+
+%build
+%if %{without insource}
+%{compiler_override} cmake . -DCMAKE_BUILD_TYPE=PACKAGE_BUILD_TYPE
+%endif
+%{compiler_override} make %{?_smp_mflags}
+
+%install
+scidb_install_prefix=${SCIDB_INSTALL_PREFIX:=$(grep '^CMAKE_INSTALL_PREFIX' CMakeCache.txt|sed 's/.*=//')}
+for p in %{scidb} %{scidb}-dbg %{scidb}-client %{scidb}-client-dbg %{scidb}-utils %{scidb}-utils-dbg %{scidb}-dev-tools %{scidb}-dev-tools-dbg %{scidb}-shim %{scidb}-plugins %{scidb}-plugins-dbg %{scidb}-client-python %{scidb}-client-python-dbg %{scidb}-dev; do
+    COMPONENT=$(echo $p | sed -e "s/%{scidb}/scidb/")
+    %{compiler_override} cmake -DCMAKE_INSTALL_PREFIX=%{buildroot}/${scidb_install_prefix} -DCMAKE_INSTALL_COMPONENT=$COMPONENT -P cmake_install.cmake | tail -n+2 | awk '{print $3}'|sed "s|%{buildroot}/||"|sort|uniq > "/tmp/rpm-$p-files"
+    %if %{without insource}
+        utils/licensing.pl %{buildroot}/${scidb_install_prefix} utils/PKGNAME.lic
+    %else
+    	${SCIDB_SOURCE_PATH}/utils/licensing.pl %{buildroot}/${scidb_install_prefix} ${SCIDB_SOURCE_PATH}/utils/PKGNAME.lic
+    %endif
+done
+
+%files -f /tmp/rpm-%{scidb}-files
+%defattr(-,root,root,-)
+
+%config(noreplace) /opt/scidb/VERSION_MAJOR.VERSION_MINOR/share/scidb/log4cxx.properties
+
+%files -n %{scidb}-dbg -f /tmp/rpm-%{scidb}-dbg-files
+%defattr(-,root,root,-)
+
+%files -n %{scidb}-client -f /tmp/rpm-%{scidb}-client-files
+%defattr(-,root,root,-)
+
+%files -n %{scidb}-client-dbg -f /tmp/rpm-%{scidb}-client-dbg-files
+%defattr(-,root,root,-)
+
+%files -n %{scidb}-utils -f /tmp/rpm-%{scidb}-utils-files
+%defattr(-,root,root,-)
+
+%files -n %{scidb}-utils-dbg -f /tmp/rpm-%{scidb}-utils-dbg-files
+%defattr(-,root,root,-)
+
+%files -n %{scidb}-dev-tools -f /tmp/rpm-%{scidb}-dev-tools-files
+%defattr(-,root,root,-)
+
+%files -n %{scidb}-dev-tools-dbg -f /tmp/rpm-%{scidb}-dev-tools-dbg-files
+%defattr(-,root,root,-)
+
+%files -n %{scidb}-plugins -f /tmp/rpm-%{scidb}-plugins-files
+%defattr(-,root,root,-)
+
+%post
+sed -i 's/rootLogger=[A-Z]\{1,\},/rootLogger=M4_ROOT_LOGGER,/' /opt/scidb/VERSION_MAJOR.VERSION_MINOR/share/scidb/log4cxx.properties
+
+%post -n %{scidb}-plugins
+mkdir -p /opt/scidb/VERSION_MAJOR.VERSION_MINOR/etc/alternatives
+mkdir -p /opt/scidb/VERSION_MAJOR.VERSION_MINOR/lib/alternatives
+%{_sbindir}/update-alternatives \
+  --altdir /opt/scidb/VERSION_MAJOR.VERSION_MINOR/etc/alternatives \
+  --admindir /opt/scidb/VERSION_MAJOR.VERSION_MINOR/lib/alternatives \
+  --install /opt/scidb/VERSION_MAJOR.VERSION_MINOR/lib/scidb/plugins/libdense_linear_algebra.so \
+  dense_linear_algebra.VERSION_MAJOR.VERSION_MINOR /opt/scidb/VERSION_MAJOR.VERSION_MINOR/lib/scidb/plugins/libdense_linear_algebra-scidb.so 10
+%{_sbindir}/update-alternatives \
+  --altdir /opt/scidb/VERSION_MAJOR.VERSION_MINOR/etc/alternatives \
+  --admindir /opt/scidb/VERSION_MAJOR.VERSION_MINOR/lib/alternatives \
+  --install /opt/scidb/VERSION_MAJOR.VERSION_MINOR/lib/scidb/plugins/liblinear_algebra.so \
+  linear_algebra.VERSION_MAJOR.VERSION_MINOR /opt/scidb/VERSION_MAJOR.VERSION_MINOR/lib/scidb/plugins/liblinear_algebra-scidb.so 10
+
+%postun -n %{scidb}-plugins
+if [ $1 -eq 0 ] ; then
+  %{_sbindir}/update-alternatives \
+  --altdir /opt/scidb/VERSION_MAJOR.VERSION_MINOR/etc/alternatives \
+  --admindir /opt/scidb/VERSION_MAJOR.VERSION_MINOR/lib/alternatives \
+  --remove dense_linear_algebra.VERSION_MAJOR.VERSION_MINOR /opt/scidb/VERSION_MAJOR.VERSION_MINOR/lib/scidb/plugins/libdense_linear_algebra-scidb.so
+  %{_sbindir}/update-alternatives \
+  --altdir /opt/scidb/VERSION_MAJOR.VERSION_MINOR/etc/alternatives \
+  --admindir /opt/scidb/VERSION_MAJOR.VERSION_MINOR/lib/alternatives \
+  --remove linear_algebra.VERSION_MAJOR.VERSION_MINOR /opt/scidb/VERSION_MAJOR.VERSION_MINOR/lib/scidb/plugins/liblinear_algebra-scidb.so
+fi
+
+%files -n %{scidb}-plugins-dbg -f /tmp/rpm-%{scidb}-plugins-dbg-files
+%defattr(-,root,root,-)
+
+%files -n %{scidb}-client-python -f /tmp/rpm-%{scidb}-client-python-files
+%defattr(-,root,root,-)
+
+%files -n %{scidb}-client-python-dbg -f /tmp/rpm-%{scidb}-client-python-dbg-files
+%defattr(-,root,root,-)
+
+%files -n %{scidb}-dev -f /tmp/rpm-%{scidb}-dev-files
+%defattr(-,root,root,-)
+
+%files -n %{scidb}-dbginfo
+
+%files -n %{scidb}-all

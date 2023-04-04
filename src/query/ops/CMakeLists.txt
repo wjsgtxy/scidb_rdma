@@ -1,0 +1,237 @@
+########################################
+# BEGIN_COPYRIGHT
+#
+# Copyright (C) 2008-2019 SciDB, Inc.
+# All Rights Reserved.
+#
+# SciDB is free software: you can redistribute it and/or modify
+# it under the terms of the AFFERO GNU General Public License as published by
+# the Free Software Foundation.
+#
+# SciDB is distributed "AS-IS" AND WITHOUT ANY WARRANTY OF ANY KIND,
+# INCLUDING ANY IMPLIED WARRANTY OF MERCHANTABILITY,
+# NON-INFRINGEMENT, OR FITNESS FOR A PARTICULAR PURPOSE. See
+# the AFFERO GNU General Public License for the complete license terms.
+#
+# You should have received a copy of the AFFERO GNU General Public License
+# along with SciDB.  If not, see <http://www.gnu.org/licenses/agpl-3.0.html>
+#
+# END_COPYRIGHT
+########################################
+
+add_subdirectory(upgradeChunkIndex)
+
+# One can create subdirectory here for every component
+set(ops_lib_src
+    BuildInOps.inc
+    add_attribute/LogicalAddAttributes.cpp
+    add_attribute/PhysicalAddAttributes.cpp
+    create_array/LogicalCreateArray.cpp
+    create_array/PhysicalCreateArray.cpp
+    project/Projection.cpp
+    project/LogicalProject.cpp
+    project/PhysicalProject.cpp
+    scan/LogicalScan.cpp
+    scan/PhysicalScan.cpp
+    bernoulli/LogicalBernoulli.cpp
+    bernoulli/PhysicalBernoulli.cpp
+    subarray/SubArray.cpp
+    subarray/LogicalSubArray.cpp
+    subarray/PhysicalSubArray.cpp
+    between/BetweenArray.cpp
+    between/LogicalBetween.cpp
+    between/PhysicalBetween.cpp
+    between/LogicalCrossBetween.cpp
+    between/PhysicalCrossBetween.cpp
+    filter/FilterArray.cpp
+    filter/LogicalFilter.cpp
+    filter/PhysicalFilter.cpp
+    flatten/CellProvider.cpp
+    flatten/FastDfArray.cpp
+    flatten/FlattenSettings.cpp
+    flatten/LogicalFlatten.cpp
+    flatten/PhysicalFlatten.cpp
+    flatten/RegionProvider.cpp
+    flatten/SlowDfArray.cpp
+    append/LogicalAppendHelper.cpp
+    append/PhysicalAppendHelper.cpp
+    apply/ApplyArray.cpp
+    apply/LogicalApply.cpp
+    apply/PhysicalApply.cpp
+    sg/LogicalSG.cpp
+    sg/PhysicalSG.cpp
+    sg/LogicalSGCount.cpp
+    sg/PhysicalSGCount.cpp
+    store/LogicalStore.cpp
+    store/PhysicalStore.cpp
+    store/UniqueNameAssigner.cpp
+    redimension/ChunkEstimator.cpp
+    redimension/ChunkIdMap.cpp
+    redimension/LocalMetrics.cpp
+    redimension/LogicalRedimension.cpp
+    redimension/OverlapRemapperArray.cpp
+    redimension/PhysicalRedimension.cpp
+    redimension/RedimensionCommon.cpp
+    redimension/RedimSettings.cpp
+    redimension/RemapperArray.cpp
+    redimension/SyntheticDimChunkMerger.cpp
+    reshape/LogicalReshape.cpp
+    reshape/PhysicalReshape.cpp
+    reshape/ReshapeArray.cpp
+    reshape/ShiftArray.cpp
+    repart/LogicalRepart.cpp
+    repart/PhysicalRepart.cpp
+    load_library/LogicalLoadLibrary.cpp
+    load_library/PhysicalLoadLibrary.cpp
+    load_module/LogicalLoadModule.cpp
+    load_module/PhysicalLoadModule.cpp
+    aggregates/LogicalAggregate.cpp
+    aggregates/PhysicalAggregate.cpp
+    aggregates/LogicalRegrid.cpp
+    aggregates/PhysicalRegrid.cpp
+    aggregates/LogicalWindow.cpp
+    aggregates/WindowArray.cpp
+    aggregates/PhysicalWindow.cpp
+    aggregates/LogicalCumulate.cpp
+    aggregates/PhysicalCumulate.cpp
+    aggregates/AggregatePartitioningOperator.cpp
+    join/JoinArray.cpp
+    join/LogicalJoin.cpp
+    join/PhysicalJoin.cpp
+    cross_join/CrossJoinArray.cpp
+    cross_join/LogicalCrossJoin.cpp
+    cross_join/PhysicalCrossJoin.cpp
+    substitute/LogicalSubstitute.cpp
+    substitute/PhysicalSubstitute.cpp
+    slice/LogicalSlice.cpp
+    slice/PhysicalSlice.cpp
+    slice/SliceArray.cpp
+    sort/LogicalSort.cpp
+    sort/PhysicalSort.cpp
+    sort/ArrayBreaker.cpp
+    sort/DistributedSort.cpp
+    sort/PrettySortArray.cpp
+    list/ListArrayBuilders.cpp
+    list/LogicalList.cpp
+    list/PhysicalList.cpp
+    attributes/LogicalAttributes.cpp
+    attributes/PhysicalAttributes.cpp
+    dimensions/LogicalDimensions.cpp
+    dimensions/PhysicalDimensions.cpp
+    rename/LogicalRename.cpp
+    rename/PhysicalRename.cpp
+    unpack/LogicalUnpack.cpp
+    unpack/PhysicalUnpack.cpp
+    unpack/Unpack.cpp
+    build/LogicalBuild.cpp
+    build/PhysicalBuild.cpp
+    build/BuildArray.cpp
+    transpose/PhysicalTranspose.cpp
+    transpose/LogicalTranspose.cpp
+    transpose/TransposeArray.cpp
+    cast/LogicalCast.cpp
+    cast/PhysicalCast.cpp
+    remove/LogicalRemove.cpp
+    remove/PhysicalRemove.cpp
+    remove/LogicalRemoveVersions.cpp
+    remove/PhysicalRemoveVersions.cpp
+    merge/LogicalMerge.cpp
+    merge/PhysicalMerge.cpp
+    merge/MergeArray.cpp
+    save/LogicalSave.cpp
+    save/PhysicalSave.cpp
+    save/LogicalSaveOld.cpp
+    save/PhysicalSaveOld.cpp
+    xgrid/LogicalXgrid.cpp
+    xgrid/PhysicalXgrid.cpp
+    xgrid/XgridArray.cpp
+    help/LogicalHelp.cpp
+    help/PhysicalHelp.cpp
+    input/LogicalInput.cpp
+    input/PhysicalInput.cpp
+    input/InputArray.cpp
+    input/ChunkLoader.cpp
+    input/CsvChunkLoader.cpp
+    input/InputSettings.cpp
+    explainPhysical/LogicalExplainPhysical.cpp
+    explainPhysical/PhysicalExplainPhysical.cpp
+    versions/LogicalVersions.cpp
+    versions/PhysicalVersions.cpp
+    explainLogical/LogicalExplainLogical.cpp
+    explainLogical/PhysicalExplainLogical.cpp
+    unload_library/LogicalUnLoadLibrary.cpp
+    unload_library/PhysicalUnLoadLibrary.cpp
+    cancel/LogicalCancel.cpp
+    cancel/PhysicalCancel.cpp
+    show/LogicalShow.cpp
+    show/PhysicalShow.cpp
+    reduce_distro/LogicalReduceDistro.cpp
+    reduce_distro/PhysicalReduceDistro.cpp
+    setopt/LogicalGetopt.cpp
+    setopt/LogicalSetopt.cpp
+    setopt/PhysicalGetopt.cpp
+    setopt/PhysicalSetopt.cpp
+    materialize/LogicalMaterialize.cpp
+    materialize/PhysicalMaterialize.cpp
+    rankquantile/LogicalRank.cpp
+    rankquantile/PhysicalRank.cpp
+    rankquantile/LogicalQuantile.cpp
+    rankquantile/PhysicalQuantile.cpp
+    rankquantile/LogicalAverageRank.cpp
+    rankquantile/PhysicalAverageRank.cpp
+    rankquantile/RankCommon.cpp
+    summarize/LogicalSummarize.cpp
+    summarize/PhysicalSummarize.cpp
+    fold/LogicalFold.cpp
+    fold/PhysicalFold.cpp
+    fold/FoldArray.cpp
+    unfold/LogicalUnfold.cpp
+    unfold/PhysicalUnfold.cpp
+    unfold/UnfoldArray.cpp
+    variable_window/LogicalVariableWindow.cpp
+    variable_window/PhysicalVariableWindow.cpp
+    variable_window/WindowEdge.cpp
+    variable_window/ChunkEdge.cpp
+    variable_window/VariableWindowMessage.cpp
+    insert/LogicalInsert.cpp
+    insert/PhysicalInsert.cpp
+    delete/LogicalDelete.cpp
+    delete/PhysicalDelete.cpp
+    test/splitarray/LogicalSplitArrayTest.cpp
+    test/splitarray/PhysicalSplitArrayTest.cpp
+    test_clear_cache/LogicalTestClearCache.cpp
+    test_clear_cache/PhysicalTestClearCache.cpp
+    consume/LogicalConsume.cpp
+    consume/PhysicalConsume.cpp
+    uniq/LogicalUniq.cpp
+    uniq/PhysicalUniq.cpp
+    index_lookup/LogicalIndexLookup.cpp
+    index_lookup/PhysicalIndexLookup.cpp
+    index_lookup/IndexLookupSettings.cpp
+    limit/LogicalLimit.cpp
+    limit/PhysicalLimit.cpp
+    broom/LogicalBroom.cpp
+    broom/PhysicalBroom.cpp
+    trace/LogicalTrace.cpp
+    trace/PhysicalTrace.cpp
+    trace/TraceArray.cpp
+    lock_arrays/LogicalLockArrays.cpp
+    lock_arrays/PhysicalLockArrays.cpp
+    dskeys/LogicalDsKeys.cpp
+    dskeys/PhysicalDsKeys.cpp
+    multi_query/LogicalMultiquery.cpp
+    multi_query/PhysicalMultiquery.cpp
+    echo/LogicalEcho.cpp
+    echo/PhysicalEcho.cpp
+)
+
+find_package(Libcsv REQUIRED)
+include_directories(${libcsv_INCLUDE_DIR})
+
+add_library(ops_lib STATIC ${ops_lib_src})
+target_link_libraries(ops_lib
+  PUBLIC compression_lib
+         network_lib
+         MurmurHash_lib
+         ${libcsv_LIBRARY}
+  )

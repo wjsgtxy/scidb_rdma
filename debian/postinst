@@ -1,0 +1,1 @@
+sed -i 's/rootLogger=[A-Z]\{1,\},/rootLogger=M4_ROOT_LOGGER,/' /opt/scidb/VERSION_MAJOR.VERSION_MINOR/share/scidb/log4cxx.properties

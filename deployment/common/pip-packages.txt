@@ -1,0 +1,8 @@
+# Alphabetical list of Python package names, one per line.  These are
+# installed on server-0, typically because they are needed by harness
+# tests.  (The prepare_coordinator.sh script does *not* get run at
+# customer sites, in case you were wondering.)
+flake8
+ordereddict
+pexpect
+protobuf

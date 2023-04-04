@@ -1,0 +1,22 @@
+--- /etc/rsyslog.conf.orig	2014-03-26 07:13:41.043999340 -0400
++++ /etc/rsyslog.conf	2014-05-20 18:39:46.353656348 -0400
+@@ -39,7 +39,8 @@
+ 
+ # Log anything (except mail) of level info or higher.
+ # Don't log private authentication messages!
+-*.info;mail.none;authpriv.none;cron.none                /var/log/messages
++#orig *.info;mail.none;authpriv.none;cron.none                /var/log/messages
++*.info;mail.none;authpriv.none;cron.none;local0.none          /var/log/messages
+ 
+ # The authpriv file has restricted access.
+ authpriv.*                                              /var/log/secure
+@@ -57,6 +58,9 @@
+ # Save news errors of level crit and higher in a special file.
+ uucp,news.crit                                          /var/log/spooler
+ 
++# SciDB utility logging (with proper RFC-3339 timestamps).
++local0.*                         /var/log/scidbutils.log;RSYSLOG_FileFormat
++
+ # Save boot messages also to boot.log
+ local7.*                                                /var/log/boot.log
+ 

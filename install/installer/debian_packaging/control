@@ -1,0 +1,6 @@
+Package: scidb-VERSION-installer
+Version: 0
+Architecture: all
+Maintainer: SciDB support list <support@lists.scidb.org>
+Description: SciDB single node installer
+Depends: scidb-VERSION-all-coord

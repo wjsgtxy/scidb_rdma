@@ -1,0 +1,5 @@
+Package: scidb-VERSION-repository
+Version: 0
+Architecture: all
+Maintainer: SciDB support list <support@lists.scidb.org>
+Description: SciDB download repository configuration

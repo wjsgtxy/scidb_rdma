@@ -1,0 +1,25 @@
+#
+# The scidb build directory (and descendants)
+/stage/
+#
+# Files and Directories associated with Eclipse editor
+.project
+.settings/
+.cproject
+.pydevproject
+#
+# Emacs backup files
+*~
+#
+# Accidental testDisable.py results
+disable.results
+cmake-build-debug
+.idea
+/src.diff
+/.VSCodeCounter/2022-08-16_16-46-38
+/.VSCodeCounter
+/.vscode
+build/
+tests/
+utils/
+cmake-build-debug-szu_master

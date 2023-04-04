@@ -1,0 +1,78 @@
+#!/bin/bash
+#
+# BEGIN_COPYRIGHT
+#
+# Copyright (C) 2019-2019 SciDB, Inc.
+# All Rights Reserved.
+#
+# SciDB is free software: you can redistribute it and/or modify
+# it under the terms of the AFFERO GNU General Public License as published by
+# the Free Software Foundation.
+#
+# SciDB is distributed "AS-IS" AND WITHOUT ANY WARRANTY OF ANY KIND,
+# INCLUDING ANY IMPLIED WARRANTY OF MERCHANTABILITY,
+# NON-INFRINGEMENT, OR FITNESS FOR A PARTICULAR PURPOSE. See
+# the AFFERO GNU General Public License for the complete license terms.
+#
+# You should have received a copy of the AFFERO GNU General Public License
+# along with SciDB.  If not, see <http://www.gnu.org/licenses/agpl-3.0.html>
+#
+# END_COPYRIGHT
+#
+function die
+{
+    echo -e 1>&2 "Fatal: $1"
+    exit 1
+}
+function get_os()
+{
+    OS_codename=$(lsb_release -c -s)
+}
+function ubuntu_toolchain_repo()
+{
+    add-apt-repository -y ppa:ubuntu-toolchain-r/test
+}
+function scidb3rdparty_repo()
+{
+    wget -qO- https://downloads.paradigm4.com/key | apt-key add -
+    echo "deb https://downloads.paradigm4.com/ 3rdparty/@SCIDB_SHORT_VERSION@/${OS_codename}/" > /etc/apt/sources.list.d/scidb3rdparty.list
+}
+function mkl_repo()
+{
+    wget -qO- https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS-2019.PUB | apt-key add -
+    echo "deb https://apt.repos.intel.com/mkl all main" > /etc/apt/sources.list.d/intel-mkl.list
+}
+function scidb_repo()
+{
+    wget -qO - https://downloads.paradigm4.com/key | sudo apt-key add -
+    echo "deb https://downloads.paradigm4.com/ community/@SCIDB_SHORT_VERSION@/${OS_codename}/" > /etc/apt/sources.list.d/scidb.list
+}
+function paradigm4_repo()
+{
+    wget -qO - https://downloads.paradigm4.com/key | sudo apt-key add -
+    echo "deb https://USERNAME:PASSWORD%downloads.paradigm4.com/ enterprise/@SCIDB_SHORT_VERSION@/${OS_codename}/" > /etc/apt/sources.list.d/paradigm4.list
+    echo
+    echo "Modify /etc/apt/sources.list.d/paradigm4.list with your Paradigm4 USERNAME and PASSWORD."
+    echo
+}
+function setup_ce_repos()
+{
+    get_os
+    ubuntu_toolchain_repo
+    mkl_repo
+    scidb_repo
+}
+function setup_ee_repos()
+{
+    get_os
+    ubuntu_toolchain_repo
+    mkl_repo
+    paradigm4_repo
+}
+function setup_devel_repos()
+{
+    get_os
+    ubuntu_toolchain_repo
+    scidb3rdparty_repo
+    mkl_repo
+}

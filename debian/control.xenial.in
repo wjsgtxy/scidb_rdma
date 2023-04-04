@@ -1,0 +1,157 @@
+Source: PKGNAME-VERSION_MAJOR.VERSION_MINOR
+Section: database
+Priority: extra
+Maintainer: SciDB support list <support@lists.scidb.org>
+Build-Depends: debhelper (>= 9.0.0),
+               git,
+               python,
+               python-pip,
+               g++ (>=4.9),
+               gfortran (>=4.9),
+               libboost1.58-dev,
+               libboost-atomic1.58-dev,
+               libboost-chrono1.58-dev,
+               libboost-date-time1.58-dev,
+               libboost-filesystem1.58-dev,
+               libboost-program-options1.58-dev,
+               libboost-regex1.58-dev,
+               libboost-serialization1.58-dev,
+               libboost-system1.58-dev,
+               libboost-thread1.58-dev,
+               liblog4cxx10-dev,
+               bison,
+               flex,
+               libcsv-dev,
+               libz-dev,
+               libbz2-dev,
+               libpqxx-dev,
+               libprotobuf-dev,
+               protobuf-compiler,
+               libcppunit-dev,
+               libedit-dev,
+               intel-mkl-64bit,
+               liblapack-dev,
+               libopenmpi-dev,
+               libscalapack-openmpi-dev,
+               librocksdb-dev,
+Standards-Version: 3.9.2
+Homepage: http://scidb.org
+
+Package: PKGNAME-VERSION_MAJOR.VERSION_MINOR
+Architecture: any
+Depends: ${shlibs:Depends},
+         ${misc:Depends},
+         python-crypto,
+         intel-mkl-64bit
+Recommends: postgresql-client
+Suggests: postgresql,
+          postgresql-contrib
+Description: SciDB - database for extra large data processing
+    BUILD
+
+Package: PKGNAME-VERSION_MAJOR.VERSION_MINOR-dbg
+Architecture: any
+Depends: PKGNAME-VERSION_MAJOR.VERSION_MINOR (= ${binary:Version})
+Description: SciDB - database for extra large data processing (debug symbols)
+    BUILD
+
+Package: PKGNAME-VERSION_MAJOR.VERSION_MINOR-client
+Architecture: any
+Depends: ${shlibs:Depends},
+         ${misc:Depends}
+Description: SciDB client library
+    BUILD
+
+Package: PKGNAME-VERSION_MAJOR.VERSION_MINOR-client-dbg
+Architecture: any
+Depends: PKGNAME-VERSION_MAJOR.VERSION_MINOR-client (= ${binary:Version})
+Description: SciDB client library (debug symbols)
+    BUILD
+
+Package: PKGNAME-VERSION_MAJOR.VERSION_MINOR-utils
+Architecture: any
+Depends: ${shlibs:Depends},
+         ${misc:Depends},
+         PKGNAME-VERSION_MAJOR.VERSION_MINOR-client (>= ${source:Upstream-Version}~),
+         libcsv3
+Description: SciDB querying tool and other utilities
+    BUILD
+
+Package: PKGNAME-VERSION_MAJOR.VERSION_MINOR-utils-dbg
+Architecture: any
+Depends: PKGNAME-VERSION_MAJOR.VERSION_MINOR-utils (= ${binary:Version})
+Description: SciDB querying tool and other utilities (debug symbols)
+    BUILD
+
+Package: PKGNAME-VERSION_MAJOR.VERSION_MINOR-dev-tools
+Architecture: any
+Depends: ${shlibs:Depends},
+         ${misc:Depends},
+         PKGNAME-VERSION_MAJOR.VERSION_MINOR-client (>= ${source:Upstream-Version}~),
+         time,
+         valgrind,
+         lsof,
+         bc
+Description: SciDB developer and tester utilities
+    BUILD
+
+Package: PKGNAME-VERSION_MAJOR.VERSION_MINOR-dev-tools-dbg
+Architecture: any
+Depends: PKGNAME-VERSION_MAJOR.VERSION_MINOR-dev-tools (= ${binary:Version})
+Description: SciDB developer and tester utilities (debug symbols)
+    BUILD
+
+Package: PKGNAME-VERSION_MAJOR.VERSION_MINOR-plugins
+Architecture: any
+Depends: ${shlibs:Depends},
+         ${misc:Depends},
+         PKGNAME-VERSION_MAJOR.VERSION_MINOR-client (= ${binary:Version}),
+         openssh-client,
+         intel-mkl-64bit
+Description: SciDB server and client plugins
+    BUILD
+
+Package: PKGNAME-VERSION_MAJOR.VERSION_MINOR-plugins-dbg
+Architecture: any
+Depends: PKGNAME-VERSION_MAJOR.VERSION_MINOR-plugins (= ${binary:Version})
+Description: SciDB server and client plugins (debug symbols)
+    BUILD
+
+Package: PKGNAME-VERSION_MAJOR.VERSION_MINOR-client-python
+Architecture: any
+Depends: ${shlibs:Depends},
+         ${misc:Depends},
+         python,
+         PKGNAME-VERSION_MAJOR.VERSION_MINOR-client (>= ${source:Upstream-Version}~)
+Description: SciDB client library python connector
+    BUILD
+
+Package: PKGNAME-VERSION_MAJOR.VERSION_MINOR-client-python-dbg
+Architecture: any
+Depends: PKGNAME-VERSION_MAJOR.VERSION_MINOR-client-python (= ${binary:Version})
+Description: SciDB client library python connector (debug symbols)
+    BUILD
+
+Package: PKGNAME-VERSION_MAJOR.VERSION_MINOR-dev
+Architecture: all
+Depends: PKGNAME-VERSION_MAJOR.VERSION_MINOR-client (= ${binary:Version})
+Description: SciDB headers
+    BUILD
+
+Package: PKGNAME-VERSION_MAJOR.VERSION_MINOR-dbginfo
+Architecture: any
+Depends: PKGNAME-VERSION_MAJOR.VERSION_MINOR-dbg (= ${binary:Version}),
+         PKGNAME-VERSION_MAJOR.VERSION_MINOR-plugins-dbg (= ${binary:Version}),
+         gdb
+Description: Installs debug symbols and gdb
+    BUILD
+
+Package: PKGNAME-VERSION_MAJOR.VERSION_MINOR-all
+Architecture: any
+Depends: PKGNAME-VERSION_MAJOR.VERSION_MINOR (= ${binary:Version}),
+         PKGNAME-VERSION_MAJOR.VERSION_MINOR-client (= ${binary:Version}),
+         PKGNAME-VERSION_MAJOR.VERSION_MINOR-utils (= ${binary:Version}),
+         PKGNAME-VERSION_MAJOR.VERSION_MINOR-plugins (= ${binary:Version}),
+         PKGNAME-VERSION_MAJOR.VERSION_MINOR-client-python (= ${binary:Version})
+Description: Install entire SciDB
+    BUILD

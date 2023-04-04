@@ -1,0 +1,5 @@
+diff -r boost/interprocess/errors.hpp /home/jonathon/boost/interprocess/errors.hpp
+117c117
+<    timeout_when_waiting_error
+---
+>    timeout_when_waiting_error,

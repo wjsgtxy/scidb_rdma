@@ -1,0 +1,17 @@
+Name        : scidb-VERSION-ce
+Version     : 0
+Release     : 1
+Architecture: noarch
+Install Date: (not installed)
+Group       : System Environment/Base
+Size        : 3604
+License     : Affero
+Signature   : (none)
+Build Date  : DATE
+Build Host  : HOSTNAME
+Relocations : (not relocatable)
+URL         : https://downloads.paradigm4.com
+Summary     : SciDB CE Installation
+Description :
+SciDB Community Edition Installation package
+

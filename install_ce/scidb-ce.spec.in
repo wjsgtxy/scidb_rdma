@@ -1,0 +1,60 @@
+Name:      scidb-VERSION-ce
+Summary:   SciDB CE installation
+Version:   PKG_VERSION
+Release:   1
+License:   Affero
+Group:     System Environment/Base
+URL:       https://downloads.paradigm4.com
+BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root
+BuildArch: noarch
+Requires: scidb-VERSION-all
+Requires: postgresql93 >= 9.3, postgresql93 < 9.4
+Requires: postgresql93-server >= 9.3, postgresql93-server < 9.4
+Requires: postgresql93-contrib >= 9.3, postgresql93-contrib < 9.4
+%define _scidb_install_path /opt/scidb/VERSION
+
+%description
+SciDB Community Edition
+
+%prep
+cp %{_sourcedir}/config.ini %{_builddir}/config.ini
+mkdir -p %{buildroot}%{_scidb_install_path}/scripts
+cp %{_sourcedir}/start_postgres.sh %{_builddir}
+cp %{_sourcedir}/setup_scidb.sh %{_builddir}
+cp %{_sourcedir}/configure_postgresql.py %{_builddir}
+cp %{_sourcedir}/os_detect.sh %{_builddir}
+
+%pre
+
+%build
+
+%install
+rm -rf %{buildroot}
+mkdir -p %{buildroot}%{_scidb_install_path}/etc
+cp %{_builddir}/config.ini %{buildroot}%{_scidb_install_path}/etc
+mkdir -p %{buildroot}%{_scidb_install_path}/scripts
+cp %{_builddir}/start_postgres.sh %{buildroot}%{_scidb_install_path}/scripts
+cp %{_builddir}/setup_scidb.sh %{buildroot}%{_scidb_install_path}/scripts
+cp %{_builddir}/configure_postgresql.py %{buildroot}%{_scidb_install_path}/scripts
+cp %{_builddir}/os_detect.sh %{buildroot}%{_scidb_install_path}/scripts
+
+%clean
+
+%files
+%defattr(-,root,root,-)
+%attr(755,root,root) %{_scidb_install_path}/etc/config.ini
+%attr(755,root,root) %{_scidb_install_path}/scripts/start_postgres.sh
+%attr(755,root,root) %{_scidb_install_path}/scripts/setup_scidb.sh
+%attr(755,root,root) %{_scidb_install_path}/scripts/configure_postgresql.py
+%attr(755,root,root) %{_scidb_install_path}/scripts/configure_postgresql.pyc
+%attr(755,root,root) %{_scidb_install_path}/scripts/configure_postgresql.pyo
+%attr(755,root,root) %{_scidb_install_path}/scripts/os_detect.sh
+
+%post
+pushd %{_scidb_install_path}/scripts
+./setup_scidb.sh /opt/scidb/VERSION
+popd
+
+%changelog
+* Thu Jan 4 2017 SciDB inquiries <info@paradigm4.com>
+- Initial build.

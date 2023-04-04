@@ -1,0 +1,10 @@
+Package: scidb-VERSION-ce
+Source: scidb-VERSION-ce
+Maintainer: Jason Kinchen <jkinchen@paradigm4.com>
+Architecture: all
+Version: 0
+Depends: postgresql-client-9.3, postgresql-9.3, postgresql-contrib-9.3, scidb-VERSION-all
+Description: SciDB CE installation
+ SciDB Community Edition package to be used by install-scidb-ce.sh script.
+
+

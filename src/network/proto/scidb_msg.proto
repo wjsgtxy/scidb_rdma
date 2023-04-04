@@ -1,0 +1,470 @@
+/* -*- C++ -*-
+**
+* BEGIN_COPYRIGHT
+*
+* Copyright (C) 2008-2019 SciDB, Inc.
+* All Rights Reserved.
+*
+* SciDB is free software: you can redistribute it and/or modify
+* it under the terms of the AFFERO GNU General Public License as published by
+* the Free Software Foundation.
+*
+* SciDB is distributed "AS-IS" AND WITHOUT ANY WARRANTY OF ANY KIND,
+* INCLUDING ANY IMPLIED WARRANTY OF MERCHANTABILITY,
+* NON-INFRINGEMENT, OR FITNESS FOR A PARTICULAR PURPOSE. See
+* the AFFERO GNU General Public License for the complete license terms.
+*
+* You should have received a copy of the AFFERO GNU General Public License
+* along with SciDB.  If not, see <http://www.gnu.org/licenses/agpl-3.0.html>
+*
+* END_COPYRIGHT
+*/
+
+/**
+ * @file scidb_msg.proto
+ * @brief Definitions of Google protobuf messages used by SciDB.
+ * @see http://code.google.com/apis/protocolbuffers/docs/proto.html
+ * @note We use protobufs version 2.
+ */
+
+syntax = "proto2";
+
+package scidb_msg;
+
+option java_package = "org.scidb.io.network";
+
+enum Constants {
+    /**
+     * If you are changing the format of the protobuf messages here
+     * (especially by adding required message fields), or any related
+     * structures like MessageType and/or MessagesHeader, you MUST
+     * increment NET_PROTOCOL_CURRENT_VER. Notice that this will
+     * impact all the client tools (by breaking backwards
+     * compatibility).
+     *
+     * A concise history of NET_PROTOCOL_CURRENT_VER versions.
+     * Non-"SDB" ticket numbers are Trac tickets ("ExternalIssueID").
+     *
+     * Version: 11
+     * Why: Include important query metadata in physical plan.
+     *      Changes AFL flag from bool to enumeration, allowing a
+     *      value that means 'unknown' when sending to worker instances.
+     *
+     * Version: 10;
+     * Who: mjl; What: SDB-5658; When: 2017-04-14
+     * Why: Revise authentication messaging.
+     *
+     * Version: 9
+     * Who: tigor; When: 4/XXX/2016; What: SDB-5217
+     *
+     * Version: 8
+     * Who: tigor; When: 9/XXX/2015; What: XXX
+     *
+     * Version: 7
+     * Who: james; When: 7/9/2015; What: 4535
+     *
+     * Version: 6
+     * Who: marty; When: 5/18/2015; What: 4294
+     *
+     * Version: 5
+     * Who: tigor; When: 2/XXX/2015; What: 4422
+     *
+     * Version: 4
+     * Who: tigor; When: 7/17/2014; What: 4138, 3667, ...
+     *
+     * Version: 3
+     * Who: ??; When: ??; What: ??
+     * Why: Initial implementation dating back some time
+     */
+     NET_PROTOCOL_CURRENT_VER = 11;
+}
+
+/**
+ * Sub-message structure used in other messages
+ * to convey the client session information
+ */
+message SessionInfo
+{
+    optional int32 job_priority = 1;
+    optional string session_json = 2;
+}
+
+/**
+ * Message with query string.  This message type is used in two
+ * scenarios:
+ *   1. By clients, to execute a query.
+ *   2. By the coordinator, when sending the physical plan to workers.
+ */
+message Query
+{
+    required string query = 1;
+    required bool afl = 2 [default = false];
+    optional string program_options = 3 [default = "unknown"];
+
+    // Indicates what kind of Query this is as described in the
+    // Query::Kind enumeration.
+    // This value is ignored when sent by clients to SciDB.
+    optional uint32 query_kind = 4 [default = 1];  // Default is Query::Kind::Single
+
+    // When this is a subquery, this value has the corresponding multiquery's ID.
+    // This value is ignored when sent by clients to SciDB.
+    optional string multi_query_id = 5;
+
+    // When this is a subquery, this value has the subquery index.
+    // This value is ignored when sent by clients to SciDB.
+    optional uint64 sub_query_index = 6 [default = 0];  // If this is a subquery, then which one is it?
+
+    // Signals SciDB that the client will pull the result.  This value
+    // is only meaningful on the coordinator during physical query plan construction.
+    optional bool fetch = 7 [default = true];
+}
+
+/**
+ * Request chunk fetching
+ */
+message Fetch
+{
+    optional uint32 attribute_id = 2;
+    optional bool position_only = 3;
+    optional uint32 obj_type = 4; // 0 - for remote array; 1 - for merged array, 2 - for pull-sg. Same as the Chunk::obj_type message field.
+    optional string array_name = 5; // a name of mapping array to fetch: result array or mapping array
+    optional uint32 prefetch_size = 6; // the number of chunks/items the sender is willing to accept in response
+    optional uint64 fetch_id = 7; // this message id
+    optional SessionInfo session_info = 8;  // session info when received on a worker and obj_type==1, coordinator ignores it
+}
+
+/**
+ * Chunk data with necessary description
+ */
+message Chunk
+{
+    optional int32 compression_method = 1;
+    repeated int64 coordinates = 2;
+    optional uint64 array_id = 3;
+    optional uint32 attribute_id = 4;
+    required bool eof = 5;
+    optional bool sparse = 6;
+    optional bool rle = 7;
+    optional uint64 decompressed_size = 8;
+    optional bool has_next = 9;
+    repeated int64 next_coordinates = 10;
+    optional uint32 obj_type = 11; // Same as the Fetch::obj_type message field.
+    optional uint64 count  = 12;
+    optional bool tombstone = 13 [default = false];
+    optional uint64 dest_instance = 14;
+    optional uint64 next_dest_instance = 15;
+    optional uint64 fetch_id = 16; // last fetch_id received by the sender
+
+    message Warning
+    {
+        required int32 code = 1;
+        required string file = 2;
+        required string function = 3;
+        required int32 line = 4;
+        required string what_str = 5;
+        required string stringified_code = 6;
+        required string strings_namespace = 7;
+    }
+
+    repeated Warning warnings = 17;//warnings posted during execution
+}
+
+/**
+ * Message with description of query result sent to client
+ */
+message QueryResult
+{
+    message AttributeDesc
+    {
+        required uint32 id = 1;
+        required string name = 2;
+        required string type = 3;
+        required uint32 flags = 4;
+        required uint32 default_compression_method = 5;
+        required int32 default_missing_reason = 6;
+        required bytes default_value = 7;
+    }
+
+    message DimensionDesc
+    {
+        required string name = 1;
+        required int64 start_min = 2;
+        required int64 curr_start = 3;
+        required int64 curr_end = 4;
+        required int64 end_max = 5;
+        required int64 chunk_interval = 6;
+        required int64 chunk_overlap = 7;
+    }
+
+    message Warning
+    {
+        required int32 code = 1;
+        required string file = 2;
+        required string function = 3;
+        required int32 line = 4;
+        required string what_str = 5;
+        required string stringified_code = 6;
+        required string strings_namespace = 7;
+    }
+
+    optional string array_name = 2;
+    repeated AttributeDesc attributes = 3;
+    repeated DimensionDesc dimensions = 4;
+    optional string explain_physical = 5;
+    optional uint64 execution_time = 6;
+    optional bool selective = 7;
+    optional string explain_logical = 8;
+    repeated Warning warnings = 9;//warnings posted during query preparing
+    repeated string plugins = 10;
+    optional bool exclusive_array_access = 11;
+    optional bool auto_commit = 12;
+}
+
+/**
+ * Physical plan for execution by every instance
+ */
+message PhysicalPlan
+{
+    required string physical_plan = 2;
+    required string cluster_uuid = 6;
+    optional SessionInfo session_info = 7;  // session info (worker only)
+    optional Query query = 8;
+}
+
+/**
+ * Message with error description
+ */
+message Error
+{
+    //UserException and SystemException part
+    required int32 type = 1; //0 - for no error, 1 - system exception, 2 - user, 3 - user query
+    optional string file = 2;
+    optional string function = 3;
+    optional int32 line = 4;
+    optional string what_str = 5;
+    required string errors_namespace = 6;
+    required int32 short_error_code = 7;
+    required int32 long_error_code = 8;
+    optional string stringified_short_error_code = 9;
+    optional string stringified_long_error_code = 10;
+
+    //UserQueryException part
+    message ParsingContext
+    {
+        required string query_string = 1;
+        required uint32 line_start = 2;
+        required uint32 col_start = 3;
+        required uint32 line_end = 4;
+        required uint32 col_end = 5;
+    }
+
+    optional ParsingContext parsing_context = 11;
+    optional string cluster_uuid = 12;
+    optional uint64 instance_id = 13;
+}
+
+/**
+ * DummyQuery record structure for:
+ * Cancel query execution message
+ * Sync messages
+ */
+message DummyQuery
+{
+    optional uint64 payload_id = 2;
+    optional string cluster_uuid = 3;
+}
+
+
+/**
+ * Cluster resources messages
+ */
+message ResourcesFileExistsRequest
+{
+    required uint64 resource_request_id = 1;
+    required string file_path = 2;
+}
+
+message ResourcesFileExistsResponse
+{
+    required uint64 resource_request_id = 1;
+    required bool exist_flag = 2;
+}
+
+/**
+ * Message used to convey flow control information
+ */
+message Control
+{
+    message Channel
+    {
+        required uint32 id = 1;
+        required uint64 available = 2;
+        required uint64 local_sn = 3;
+        required uint64 remote_sn = 4;
+    }
+
+    required uint64 local_gen_id = 1;
+    required uint64 remote_gen_id = 2;
+    repeated Channel channels = 3;
+}
+
+/**
+ *  MPI slave -> SciDB handshake
+ */
+message MpiSlaveHandshake
+{
+    required string cluster_uuid = 1;
+    required uint64 instance_id = 2;
+    required uint64 launch_id = 3;
+    required uint64 rank = 4;
+    required int32 pid  = 5;
+    required int32 ppid = 6;
+}
+
+/**
+ *  MPI slave -> SciDB command result
+ */
+message MpiSlaveResult
+{
+    required uint64 launch_id = 1;
+    required int64 status = 3;
+}
+
+/**
+ * SciDB -> MPI slave command
+ */
+message MpiSlaveCommand
+{
+    required string command = 1;
+    repeated string args = 2;
+}
+
+/**
+ * Client -> Server
+ * Client (which could be another instance) sends this as the first
+ * message on a new connection to begin the authentication protocol.
+ */
+message AuthLogon
+{
+    required string username = 1;
+    optional int32 priority = 2 [default = 0];
+    optional string authtag = 3;
+    optional bytes puzzle = 4;
+    optional bytes signature = 5;
+}
+
+/**
+ * Server -> Client
+ * Authentication challenge: riddle me this, Batman!
+ * Challenge 'code' indicates how to interpret 'text'.
+ */
+message AuthChallenge
+{
+    required uint32 cookie = 1;
+    optional sint32 method = 2;
+    optional sint32 code = 3;
+    optional string text = 4;
+}
+
+/**
+ * Client -> Server
+ * Response to AuthChallenge
+ */
+message AuthResponse
+{
+    required uint32 cookie = 1;
+    optional string text = 2;
+}
+
+/**
+ * Server -> Client
+ * Send ACK/NACK when authentication is complete.  If NACK, connection
+ * will soon be dropped.
+ */
+message AuthComplete
+{
+    required bool authenticated = 1;
+    optional string reason = 2;
+}
+
+/**
+ * Server -> Server-as-client
+ * Tell fellow instance it can stop reading on this outbound connection.
+ */
+message Hangup
+{
+    optional sint32 code = 1;   // Must be zero for NET_PROTOCOL_CURRENT_VERSION == 10.
+}
+
+/**
+ *
+ */
+message Liveness
+{
+    required string cluster_uuid = 6;
+    required uint64 membership_id = 3;
+    required uint64 version = 2;
+
+    message InstanceListEntry
+    {
+        required uint64 instance_id = 2;
+        required uint64 gen_id = 3;
+    }
+
+    message InstanceList
+    {
+        repeated InstanceListEntry instance_entry = 2;
+    }
+
+    required InstanceList dead_list = 4;
+    required InstanceList live_list = 5;
+}
+
+/**
+ *
+ */
+message LivenessAck
+{
+    required Liveness liveness = 2;
+    required uint64 request_version = 3;
+}
+
+/**
+ *
+ */
+message LivenessVector
+{
+    message VersionEntry
+    {
+        required uint64 instance_id = 2;
+        required uint64 version = 3;
+    }
+    message Versions
+    {
+      repeated VersionEntry version_entry = 2;
+    }
+    required string cluster_uuid = 2;
+    required Versions versions = 3;
+}
+
+/**
+ *
+ */
+message OrderedBcastRequest
+{
+    required uint64 timestamp = 1;
+    required uint32 payload_message_type = 2;
+    required bytes payload_message = 3;
+    required LivenessVector vector = 4;
+}
+
+/**
+ *
+ */
+message OrderedBcastReply
+{
+    required uint64 request_timestamp = 1;
+    required uint64 request_instance = 2;
+    required uint64 timestamp = 3;
+    required LivenessVector vector = 4;
+}

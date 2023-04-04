@@ -1,0 +1,67 @@
+#!/usr/bin/make -f
+
+#export DH_VERBOSE=1
+
+COMPILER_OVERRIDE :=  CC=/usr/bin/gcc-4.9 CXX=/usr/bin/g++-4.9 FC=/usr/bin/gfortran-4.9
+
+export PATH := /usr/local/bin:$(PATH)
+
+CMAKE ?= cmake
+BUILD_DIR ?= build
+INSOURCE ?= 0
+
+PACKAGES := PKGNAME-VERSION_MAJOR.VERSION_MINOR.deb PKGNAME-VERSION_MAJOR.VERSION_MINOR-dbg.deb PKGNAME-VERSION_MAJOR.VERSION_MINOR-client.deb PKGNAME-VERSION_MAJOR.VERSION_MINOR-client-dbg.deb PKGNAME-VERSION_MAJOR.VERSION_MINOR-utils.deb PKGNAME-VERSION_MAJOR.VERSION_MINOR-utils-dbg.deb PKGNAME-VERSION_MAJOR.VERSION_MINOR-dev-tools.deb
+PACKAGES += PKGNAME-VERSION_MAJOR.VERSION_MINOR-dev-tools-dbg.deb PKGNAME-VERSION_MAJOR.VERSION_MINOR-plugins.deb PKGNAME-VERSION_MAJOR.VERSION_MINOR-plugins-dbg.deb PKGNAME-VERSION_MAJOR.VERSION_MINOR-client-python.deb PKGNAME-VERSION_MAJOR.VERSION_MINOR-client-python-dbg.deb PKGNAME-VERSION_MAJOR.VERSION_MINOR-dev.deb
+
+ifneq (,$(filter parallel=%,$(DEB_BUILD_OPTIONS)))
+  NUMJOBS = $(patsubst parallel=%,%,$(filter parallel=%,$(DEB_BUILD_OPTIONS)))
+  MAKEFLAGS += -j$(NUMJOBS)
+endif
+
+CMAKE_FLAGS := -DCMAKE_BUILD_TYPE=PACKAGE_BUILD_TYPE
+
+%:
+	dh $@
+
+override_dh_installdeb:
+	dh_installdeb
+
+override_dh_auto_configure:
+	-test $(INSOURCE) -eq 0 && mkdir -p $(BUILD_DIR) && cd $(BUILD_DIR) && $(COMPILER_OVERRIDE) $(CMAKE) $(CMAKE_FLAGS) ..
+
+override_dh_auto_build:
+	cd $(BUILD_DIR) && $(COMPILER_OVERRIDE) $(MAKE)
+
+override_dh_auto_install: $(PACKAGES)
+	dh_auto_install
+
+override_dh_auto_clean:
+	-([ $(INSOURCE) -eq 0 ] && rm -rf $(BUILD_DIR))
+
+override_dh_clean:
+	-(if [ $(INSOURCE) -eq 1 ]; then \
+	   cd debian; \
+	   for p in $(PACKAGES) PKGNAME-VERSION_MAJOR.VERSION_MINOR-dbginfo PKGNAME-VERSION_MAJOR.VERSION_MINOR-all; do \
+	       rm -rf $${p%.deb}; \
+	   done; \
+	   rm -f *.log; \
+	   rm -f *.substvars; \
+	   rm -f files; \
+	   rm -rf tmp; \
+	 fi)
+
+%.deb:
+	$(COMPILER_OVERRIDE) $(CMAKE) -DCMAKE_INSTALL_PREFIX=debian/$(@:.deb=)/$(shell grep '^CMAKE_INSTALL_PREFIX' $(BUILD_DIR)/CMakeCache.txt|sed 's/.*=//')     \
+					-DCMAKE_INSTALL_COMPONENT=$(shell echo $(@:.deb=) | sed -e "s/-VERSION_MAJOR.VERSION_MINOR//" | sed -e "s/PKGNAME/scidb/") \
+					-P $(BUILD_DIR)/cmake_install.cmake
+	if [ $(INSOURCE) -eq 1 ]; then \
+	   ${SCIDB_SOURCE_PATH}/utils/licensing.pl debian/$(@:.deb=)/opt/scidb/VERSION_MAJOR.VERSION_MINOR ${SCIDB_SOURCE_PATH}/utils/PKGNAME.lic; \
+	else \
+	   utils/licensing.pl debian/$(@:.deb=)/opt/scidb/VERSION_MAJOR.VERSION_MINOR utils/PKGNAME.lic; \
+	fi
+
+override_dh_installdocs:
+override_dh_installchangelogs:
+override_dh_usrlocal:
+override_dh_strip:
+override_dh_auto_test:

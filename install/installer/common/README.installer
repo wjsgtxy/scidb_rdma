@@ -1,0 +1,18 @@
+SciDB VERSION Community Edition Installer
+
+The installer made the following changes to your operating system:
+    The IP6 line in /etc/hosts has been removed.
+
+User "scidb"
+    If there was not a "scidb" user, one was created, with password "paradigm4".
+    This is the account that runs and interacts with SciDB.
+
+    A passphrase-less ssh key pair was generated and authorized for the "scidb" user.
+    A bash shell configuration file "/home/scidb/.bash_scidb" was created
+    and is sourced by user "scidb"s .bashrc file.
+    The .bash_scidb file sets environment variables necessary to run SciDB by the "scidb" user.
+
+Install
+    SciDB Community Edition VERSION was installed in /opt/scidb/VERSION.
+    SciDB was started with the configuration file in /opt/scidb/VERSION/etc/config.ini.
+    The cluster name is "single_server". Use this as the scidb_cluster_name to the scidbctl.py command mentioned in the installation guide.
