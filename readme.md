@@ -10,4 +10,6 @@
 
 ## 修改的代码
 
-新增的代码主要在网络模块src/network/rdma目录下面，另外还修改了entry.cpp，connection.cpp等文件。
+新增的代码主要在网络模块src/network/rdma目录下面，另外还修改了entry.cpp，connection.cpp, NetworkManager.cpp等文件。
+主要技术手段是在Connection中发送数据包的时候拦截，使用提前建立的RDMA连接发送该数据包。同时RDMA的网络管理器提前准备好接收缓冲buffer，收到数据后使用Protobuf解析数据，解析完成后组装成SciDB原本网络管理器需要的Message实例，
+并转发给SciDB的网络管理器进行后续处理。
